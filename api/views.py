@@ -15,11 +15,20 @@ def generate_code(length=6):
 
 class UrlCreate(APIView):
     def post(self, request):
+        original_url = request.data.get('original_url')
+        existing = Url.objects.filter(original_url=original_url).first()
+        if existing:
+            return Response({
+                'message': 'This URL has already been shortened',
+                'original_url': existing.original_url,
+                'short_code': existing.short_code
+            }, status=status.HTTP_200_OK)
+        
         serializer = UrlSerializer(data=request.data)
         if serializer.is_valid():
             short_code = generate_code()
             serializer.save(short_code=short_code)
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
+            return Response({'original_url': serializer.data['original_url'], 'short_code': short_code}, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 class UrlRetrieve(APIView):
